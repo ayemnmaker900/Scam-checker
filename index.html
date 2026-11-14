@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scam Message Checker</title>
+<style>
+:root{--bg:#f6f7f4;--ink:#1b2a2f;--mute:#5d6b70;--card:#ffffff;--line:#d9ded9;--ok:#1f7a4d;--warn:#b86e00;--bad:#b3261e;--accent:#16505e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a1d;--ink:#e6eeee;--mute:#9db0b3;--card:#17252a;--line:#2a3b40;--ok:#4cc38a;--warn:#e5a23a;--bad:#ff7a70;--accent:#6cc4d6}}
+:root[data-theme="dark"]{--bg:#101a1d;--ink:#e6eeee;--mute:#9db0b3;--card:#17252a;--line:#2a3b40;--ok:#4cc38a;--warn:#e5a23a;--bad:#ff7a70;--accent:#6cc4d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.6rem;line-height:1.2;margin:8px 0 6px}
+p.lead{color:var(--mute);margin:0 0 16px}
+textarea{width:100%;min-height:150px;padding:12px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;resize:vertical}
+textarea:focus,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+button{font:inherit;border-radius:8px;padding:10px 16px;cursor:pointer;border:1.5px solid var(--accent);background:transparent;color:var(--accent)}
+button.primary{background:var(--accent);color:var(--bg);font-weight:600}
+button.chip{font-size:.85rem;padding:6px 10px;border-color:var(--line);color:var(--mute)}
+#result{display:none;margin-top:18px;background:var(--card);border:1.5px solid var(--line);border-left-width:8px;border-radius:8px;padding:14px 16px}
+#verdict{font-size:1.3rem;font-weight:700;margin:0}
+#score{color:var(--mute);margin:2px 0 10px;font-size:.9rem}
+ul{padding-left:20px;margin:6px 0}
+li{margin:4px 0}
+h2{font-size:1rem;margin:14px 0 4px}
+.note{color:var(--mute);font-size:.85rem;margin-top:18px}
+.help{margin-top:22px;background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:4px 16px}
+.help summary{cursor:pointer;font-weight:700;padding:12px 0}
+.help summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.help ol{padding-left:20px;margin:0 0 12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Is this message a scam?</h1>
+<p class="lead">Paste an SMS, email, or link. The checker looks for common red flags and explains what it found.</p>
+<label for="msg" style="font-weight:600">Message or link</label>
+<textarea id="msg" placeholder="Paste the message here"></textarea>
+<div class="row">
+<button class="primary" id="go">Check message</button>
+<button id="clr">Clear</button>
+</div>
+<div class="row" id="samples"></div>
+<section id="result" aria-live="polite">
+<p id="verdict"></p>
+<p id="score"></p>
+<h2>Why</h2>
+<ul id="reasons"></ul>
+<h2>What to do</h2>
+<ul id="advice"></ul>
+</section>
+<details class="help">
+<summary>Been scammed? Do this</summary>
+<ol>
+<li>Stop all contact with the scammer. Do not send more money or information.</li>
+<li>Call your bank or mobile wallet provider right away to block your card, account, or SIM and try to stop the payment.</li>
+<li>Change the passwords of your email, banking, and social media accounts, and turn on two-factor authentication.</li>
+<li>Save evidence: screenshots of messages, links, phone numbers, and payment receipts. Do not delete anything.</li>
+<li>Report it in Pakistan: call the cyber crime helpline <strong>1991</strong> (FIA / NCCIA) or file a complaint online, and report the number or account on the platform it came from. For harassment or blackmail, the Digital Rights Foundation helpline is <strong>0800-39393</strong>. In an emergency, call the police on <strong>15</strong>.</li
+<li>Tell a trusted family member or friend. Scams are not your fault, and talking about it helps you recover and protects others.</li>
+</ol>
+</details>
+<p class="note">This tool uses simple rules, so it can miss scams or flag safe messages. Never share OTPs, PINs, or passwords, and confirm with your bank or the company through its official number.</p>
+</main>
+<script>
+var RULES=[
+{p:2,t:"Creates urgency or pressure",r:/\b(urgent|immediately|act now|within \d+ (hours?|minutes?)|last chance|expires? (today|soon)|hurry)\b/i},
+{p:3,t:"Asks for an OTP, PIN, password, or card details",r:/\b(otp|one[- ]time (code|password)|pin|password|cvv|card number|account number|cnic|verification code)\b/i},
+{p:3,t:"Mentions a prize, lottery, or reward you did not ask for",r:/\b(you (have )?won|lottery|lucky (winner|draw)|prize|congratulations|free gift|cash reward|claim your)\b/i},
+{p:2,t:"Threatens account blocking or legal action",r:/\b(account (is |has been )?(blocked|suspended|locked|closed)|legal action|arrest|police case|penalty|deactivated)\b/i},
+{p:3,t:"Asks you to pay a fee or send money first",r:/\b(processing fee|registration fee|advance payment|send (money|payment)|transfer (the )?(amount|money)|pay (a )?(fee|deposit)|easypaisa|jazzcash|gift card)\b/i},
+{p:2,t:"Offers easy money or a job with no experience",r:/\b(work from home|earn (rs\.?|\$)?\s?\d+|daily income|no experience|part[- ]time job|guaranteed (income|profit)|double your)\b/i},
+{p:1,t:"Claims to be a bank, courier, or government office",r:/\b(bank|courier|dhl|fedex|customs|tax (office|department)|bisp|ehsaas|fbr|nadra|parcel|delivery (failed|attempt))\b/i},
+{p:2,t:"Asks you to click a link to verify or update details",r:/\b(click (here|the link|below)|verify (your|account)|update (your )?(details|information|kyc)|confirm your (identity|account))\b/i}
+];
+var BRANDS=["paypal","amazon","google","facebook","instagram","whatsapp","netflix","apple","microsoft","daraz","hbl","ubl","meezan","easypaisa","jazzcash"];
+var SHORT=/(bit\.ly|tinyurl\.com|t\.co|is\.gd|cutt\.ly|goo\.gl|rb\.gy|shorturl\.at|ow\.ly)/i;
+var BADTLD=/\.(xyz|top|click|live|icu|tk|ml|ga|cf|gq|buzz|monster|rest|cyou)$/i;
+function hosts(text){var m=text.match(/(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+|\b[a-z0-9-]+(\.[a-z0-9-]+)+\/[^\s]*)/gi)||[];return m;}
+function analyse(text){
+var hits=[],score=0;
+RULES.forEach(function(x){if(x.r.test(text)){hits.push(x.t);score+=x.p;}});
+hosts(text).forEach(function(u){
+var full=/^https?:\/\//i.test(u)?u:"http://"+u,host="";
+try{host=new URL(full).hostname.toLowerCase();}catch(e){return;}
+if(SHORT.test(host)){hits.push("Uses a shortened link ("+host+") that hides the real destination");score+=2;}
+if(/^\d{1,3}(\.\d{1,3}){3}$/.test(host)){hits.push("Link uses a raw IP address");score+=3;}
+if(/^http:\/\//i.test(full)&&!/^https:/i.test(u)&&/^http:/i.test(u)){hits.push("Link is not secure (http, not https)");score+=1;}
+if(BADTLD.test(host)){hits.push("Link ends in a domain type often used in scams ("+host+")");score+=2;}
+if((host.match(/-/g)||[]).length>=2){hits.push("Link has many hyphens ("+host+")");score+=1;}
+if(host.split(".").length>4){hits.push("Link has an unusually long chain of subdomains");score+=1;}
+if(/@/.test(u.replace(/^https?:\/\//i,"").split("/")[0])){hits.push("Link contains an @ symbol to disguise the real site");score+=3;}
+var plain=host.replace(/0/g,"o").replace(/1/g,"l").replace(/3/g,"e").replace(/5/g,"s");
+BRANDS.forEach(function(b){
+var official=host===b+".com"||host.endsWith("."+b+".com")||host.endsWith("."+b+".com.pk")||host===b+".com.pk";
+if(!official&&host.indexOf(b)>-1){hits.push("Link imitates the brand \""+b+"\" but is not its official site ("+host+")");score+=3;}
+else if(!official&&plain.indexOf(b)>-1&&host.indexOf(b)===-1){hits.push("Link uses look-alike characters to copy \""+b+"\" ("+host+")");score+=3;}
+});
+});
+return{score:score,hits:Array.from(new Set(hits))};
+}
+function show(res,empty){
+var box=document.getElementById("result"),v=document.getElementById("verdict");
+var color,label,adv;
+if(empty){color="var(--mute)";label="Nothing to check";adv=["Paste a message or link first."];}
+else if(res.score>=5){color="var(--bad)";label="Likely a scam";adv=["Do not click any link or reply.","Never share OTPs, PINs, or passwords.","Block the sender and report it to your bank or cybercrime agency."];}
+else if(res.score>=2){color="var(--warn)";label="Suspicious";adv=["Do not click links in the message.","Contact the company using its official website or number.","Ask someone you trust before acting."];}
+else{color="var(--ok)";label="No major red flags found";adv=["Stay careful: this check is not a guarantee.","If anything feels off, confirm through an official channel."];}
+box.style.display="block";box.style.borderLeftColor=color;
+v.textContent=label;v.style.color=color;
+document.getElementById("score").textContent=empty?"":"Risk score: "+res.score+" (0-1 low, 2-4 suspicious, 5 or more likely scam)";
+var rs=document.getElementById("reasons");rs.innerHTML="";
+(empty?[]:res.hits.length?res.hits:["No common scam patterns detected."]).forEach(function(t){var li=document.createElement("li");li.textContent=t;rs.appendChild(li);});
+var ad=document.getElementById("advice");ad.innerHTML="";
+adv.forEach(function(t){var li=document.createElement("li");li.textContent=t;ad.appendChild(li);});
+}
+var ta=document.getElementById("msg");
+document.getElementById("go").onclick=function(){var t=ta.value.trim();if(!t){show(null,true);return;}show(analyse(t),false);};
+document.getElementById("clr").onclick=function(){ta.value="";document.getElementById("result").style.display="none";ta.focus();};
+var SAMPLES=[
+["Scam: prize","Congratulations! You have won Rs. 500,000 in the lucky draw. Click http://bit.ly/claim-now and send the processing fee within 24 hours to claim your prize."],
+["Scam: bank","URGENT: Your bank account has been blocked. Verify immediately at http://hbl-secure-login.xyz and share your OTP and PIN."],
+["Safe: friend","Hey, are we still meeting at 5 for the group study session? I will bring the notes."],
+["Safe: class","Reminder: ICT project proposals are due Friday. Please submit them on the class portal."]
+];
+var sm=document.getElementById("samples");
+SAMPLES.forEach(function(s){var b=document.createElement("button");b.className="chip";b.textContent=s[0];b.onclick=function(){ta.value=s[1];document.getElementById("go").click();};sm.appendChild(b);});
+</script>
+</body>
+</html>
